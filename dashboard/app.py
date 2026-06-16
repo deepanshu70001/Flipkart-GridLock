@@ -37,30 +37,95 @@ st.set_page_config(
 # Custom CSS for premium look
 st.markdown("""
 <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+    
+    html, body, [class*="css"] {
+        font-family: 'Inter', sans-serif;
+    }
+    
     .stApp {
-        background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+        background: linear-gradient(135deg, #0B0F19 0%, #1A1A2E 50%, #16213E 100%);
+        color: #E2E8F0;
     }
+    
     .main .block-container {
-        padding-top: 1rem;
+        padding-top: 2rem;
+        max-width: 1400px;
     }
-    h1, h2, h3 {
-        color: #f0f0f0 !important;
+    
+    h1, h2, h3, h4, h5, h6 {
+        color: #FFFFFF !important;
+        font-weight: 600 !important;
+        letter-spacing: -0.5px;
     }
-    .metric-card {
-        background: rgba(255, 255, 255, 0.1);
+    
+    /* Metrics Styling */
+    [data-testid="stMetric"] {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        padding: 1.2rem;
         border-radius: 12px;
-        padding: 20px;
-        backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 255, 255, 0.2);
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
     }
-    .stMetric {
-        background: rgba(255, 255, 255, 0.05);
-        padding: 15px;
-        border-radius: 10px;
+    [data-testid="stMetric"]:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2), 0 4px 6px -2px rgba(0, 0, 0, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+    }
+    [data-testid="stMetricLabel"] {
+        color: #94A3B8 !important;
+        font-size: 0.95rem !important;
+        font-weight: 500;
+    }
+    [data-testid="stMetricValue"] {
+        color: #F8FAFC !important;
+        font-size: 2.2rem !important;
+        font-weight: 700;
+    }
+    
+    /* Sidebar Styling */
+    [data-testid="stSidebar"] {
+        background: rgba(11, 15, 25, 0.95);
+        border-right: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    
+    /* Button Styling */
+    .stButton > button {
+        background: linear-gradient(90deg, #4F46E5 0%, #7C3AED 100%);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        padding: 0.6rem 1.5rem;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 14px 0 rgba(79, 70, 229, 0.39);
+    }
+    .stButton > button:hover {
+        transform: scale(1.02);
+        box-shadow: 0 6px 20px rgba(79, 70, 229, 0.23);
+        color: white;
+    }
+    
+    /* Selectbox & Inputs */
+    .stSelectbox > div > div {
+        background-color: rgba(255, 255, 255, 0.05) !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        color: #F8FAFC !important;
+        border-radius: 8px;
+    }
+    
+    /* Info/Success Boxes */
+    .stAlert {
+        border-radius: 8px;
+        border: none;
+    }
+    
+    /* DataFrame */
+    [data-testid="stDataFrame"] {
+        border-radius: 8px;
+        overflow: hidden;
         border: 1px solid rgba(255, 255, 255, 0.1);
-    }
-    .css-1d391kg {  /* sidebar */
-        background: rgba(15, 12, 41, 0.95);
     }
 </style>
 """, unsafe_allow_html=True)
