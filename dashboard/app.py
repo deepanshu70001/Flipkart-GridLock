@@ -844,31 +844,66 @@ def render_prediction_interface(df):
     recommender = load_recommender()
 
     # ── INPUT FORM ──
-    st.markdown("##### 📝 Event Configuration")
+    st.markdown("##### 📝 Step 1: What Happened & Where?")
 
     col1, col2, col3 = st.columns(3)
 
     with col1:
         st.markdown('<p style="color:#94A3B8; font-size:0.7rem; font-weight:700; text-transform:uppercase; letter-spacing:1px; margin-bottom:0.5rem;">Event Profile</p>', unsafe_allow_html=True)
-        event_cause = st.selectbox(
-            "Event Cause",
-            sorted(df["event_cause"].unique().tolist()) if "event_cause" in df.columns else
-            ["vehicle_breakdown", "accident", "construction", "public_event",
+        event_causes = sorted(df["event_cause"].unique().tolist()) if "event_cause" in df.columns else [
+             "vehicle_breakdown", "accident", "construction", "public_event",
              "procession", "vip_movement", "protest", "tree_fall",
-             "water_logging", "congestion", "pot_holes", "road_conditions", "others"],
-        )
-        event_type = st.selectbox("Event Type", ["planned", "unplanned"])
+             "water_logging", "congestion", "pot_holes", "road_conditions", "others"]
+        event_cause = st.selectbox("Event Cause", event_causes)
+        
+        # Smart default for event type
+        planned_causes = {"construction", "public_event", "procession", "vip_movement"}
+        default_type_idx = 0 if event_cause in planned_causes else 1
+        event_type = st.selectbox("Event Type", ["planned", "unplanned"], index=default_type_idx, help="Auto-selected based on cause, but you can override.")
 
+    with col2:
+        st.markdown('<p style="color:#94A3B8; font-size:0.7rem; font-weight:700; text-transform:uppercase; letter-spacing:1px; margin-bottom:0.5rem;">Primary Location</p>', unsafe_allow_html=True)
         corridors_list = sorted([c for c in df["corridor"].unique()
                                  if c != "Non-corridor" and c != "unknown"]) if "corridor" in df.columns else []
         corridor = st.selectbox("Corridor", ["Non-corridor"] + corridors_list)
-
+        
         veh_types = sorted([v for v in df["veh_type"].unique()
                             if v != "unknown" and pd.notna(v)]) if "veh_type" in df.columns else []
         vehicle_type = st.selectbox("Vehicle Type", ["unknown"] + veh_types)
 
-    with col2:
-        st.markdown('<p style="color:#94A3B8; font-size:0.7rem; font-weight:700; text-transform:uppercase; letter-spacing:1px; margin-bottom:0.5rem;">Timing & Location</p>', unsafe_allow_html=True)
+    with col3:
+        st.markdown('<p style="color:#94A3B8; font-size:0.7rem; font-weight:700; text-transform:uppercase; letter-spacing:1px; margin-bottom:0.5rem;">Specific Location</p>', unsafe_allow_html=True)
+        
+        # Auto-fill Zone based on corridor
+        corridor_df = df[df["corridor"] == corridor]
+        top_zones = corridor_df["zone"].value_counts() if not corridor_df.empty and "zone" in df.columns else pd.Series(dtype=int)
+        default_zone = top_zones.index[0] if not top_zones.empty else "Unknown"
+        
+        zones = ["Unknown"] + sorted([z for z in df["zone"].unique() if pd.notna(z)]) if "zone" in df.columns else ["Unknown"]
+        zone_idx = zones.index(default_zone) if default_zone in zones else 0
+        zone = st.selectbox("Zone", zones, index=zone_idx, help="Auto-filled based on Corridor")
+
+        # Auto-fill Junction based on corridor
+        top_junctions = corridor_df["junction"].value_counts() if not corridor_df.empty and "junction" in df.columns else pd.Series(dtype=int)
+        valid_junctions = [j for j in top_junctions.index if pd.notna(j) and j != "unknown"]
+        default_junction = valid_junctions[0] if valid_junctions else "unknown"
+        
+        if valid_junctions:
+            junctions = ["unknown"] + valid_junctions
+        else:
+            all_juncs = sorted([j for j in df["junction"].unique() if pd.notna(j) and j != "unknown"]) if "junction" in df.columns else []
+            junctions = ["unknown"] + all_juncs[:50]
+            
+        junc_idx = junctions.index(default_junction) if default_junction in junctions else 0
+        junction = st.selectbox("Nearest Junction", junctions, index=junc_idx, help="Filtered & auto-filled based on Corridor")
+
+    st.markdown("---")
+    st.markdown("##### 🕒 Step 2: When & Additional Context")
+    
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        st.markdown('<p style="color:#94A3B8; font-size:0.7rem; font-weight:700; text-transform:uppercase; letter-spacing:1px; margin-bottom:0.5rem;">Timing</p>', unsafe_allow_html=True)
         hour = st.slider("Hour (IST)", 0, 23, 9)
         day_of_week = st.selectbox("Day of Week",
                                    ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"])
@@ -876,11 +911,13 @@ def render_prediction_interface(df):
         is_weekend = day_idx >= 5
         is_rush = hour in [8, 9, 10, 17, 18, 19, 20]
 
+    with col2:
+        st.markdown('<p style="color:#94A3B8; font-size:0.7rem; font-weight:700; text-transform:uppercase; letter-spacing:1px; margin-bottom:0.5rem;">Traffic Conditions</p>', unsafe_allow_html=True)
         # Dynamic rush hour indicator
         if is_rush:
             st.markdown("""
             <div style="background: rgba(244,63,94,0.1); border: 1px solid rgba(244,63,94,0.3);
-                        border-radius: 10px; padding: 0.6rem 1rem; text-align: center;">
+                        border-radius: 10px; padding: 0.6rem 1rem; text-align: center; margin-bottom: 0.5rem;">
                 <span style="color: #F43F5E; font-weight: 700;">🔴 RUSH HOUR</span>
                 <span style="color: #94A3B8; font-size: 0.8rem;"> — Higher congestion expected</span>
             </div>
@@ -888,7 +925,7 @@ def render_prediction_interface(df):
         else:
             st.markdown("""
             <div style="background: rgba(16,185,129,0.08); border: 1px solid rgba(16,185,129,0.2);
-                        border-radius: 10px; padding: 0.6rem 1rem; text-align: center;">
+                        border-radius: 10px; padding: 0.6rem 1rem; text-align: center; margin-bottom: 0.5rem;">
                 <span style="color: #10B981; font-weight: 700;">🟢 Off-Peak</span>
                 <span style="color: #94A3B8; font-size: 0.8rem;"> — Normal traffic flow</span>
             </div>
@@ -897,24 +934,14 @@ def render_prediction_interface(df):
         if is_weekend:
             st.markdown("""
             <div style="background: rgba(139,92,246,0.08); border: 1px solid rgba(139,92,246,0.2);
-                        border-radius: 10px; padding: 0.4rem 0.8rem; text-align: center; margin-top: 0.5rem;">
+                        border-radius: 10px; padding: 0.4rem 0.8rem; text-align: center;">
                 <span style="color: #8B5CF6; font-weight: 600; font-size: 0.85rem;">📅 Weekend</span>
             </div>
             """, unsafe_allow_html=True)
 
     with col3:
-        st.markdown('<p style="color:#94A3B8; font-size:0.7rem; font-weight:700; text-transform:uppercase; letter-spacing:1px; margin-bottom:0.5rem;">Additional Details</p>', unsafe_allow_html=True)
+        st.markdown('<p style="color:#94A3B8; font-size:0.7rem; font-weight:700; text-transform:uppercase; letter-spacing:1px; margin-bottom:0.5rem;">Extra Details</p>', unsafe_allow_html=True)
         requires_closure = st.checkbox("Requires Road Closure?")
-
-        # Zone selector (from data)
-        zones = sorted([z for z in df["zone"].unique() if pd.notna(z)]) if "zone" in df.columns else []
-        zone = st.selectbox("Zone", ["Unknown"] + zones) if zones else "Unknown"
-
-        # Junction selector
-        junctions = sorted([j for j in df["junction"].unique()
-                            if pd.notna(j) and j != "unknown"])[:50] if "junction" in df.columns else []
-        junction = st.selectbox("Nearest Junction", ["unknown"] + junctions) if junctions else "unknown"
-
         description = st.text_area("Event Description (optional)", height=68,
                                    placeholder="e.g., Major water logging near underpass...")
 
@@ -1227,9 +1254,9 @@ def render_prediction_interface(df):
                     st.markdown(f"**Closure Type:** {closure_type_labels.get(barricading['type'], barricading['type'])}")
 
                     barricade_items = {
-                        "Barricades": barricading["barricade_count"],
-                        "Traffic Cones": barricading.get("cones_required", 0),
-                        "Signage Boards": barricading.get("signage_boards", 0),
+                        "Barricades": str(barricading["barricade_count"]),
+                        "Traffic Cones": str(barricading.get("cones_required", 0)),
+                        "Signage Boards": str(barricading.get("signage_boards", 0)),
                     }
                     if "temporary_fencing_meters" in barricading:
                         barricade_items["Temp. Fencing"] = f"{barricading['temporary_fencing_meters']}m"
@@ -1242,16 +1269,20 @@ def render_prediction_interface(df):
                     st.dataframe(bar_df, use_container_width=True, hide_index=True)
 
                 with col2:
-                    # Barricade visualization
-                    bar_names = list(barricade_items.keys())[:4]
-                    bar_vals = [barricade_items[k] for k in bar_names]
-                    bar_vals = [int(v) if isinstance(v, (int, float)) else 0 for v in bar_vals]
+                    # Barricade visualization — use raw numeric values
+                    chart_data = {
+                        "Barricades": barricading["barricade_count"],
+                        "Cones": barricading.get("cones_required", 0),
+                        "Signage": barricading.get("signage_boards", 0),
+                    }
+                    if "temporary_fencing_meters" in barricading:
+                        chart_data["Fencing(m)"] = barricading["temporary_fencing_meters"]
 
                     fig = go.Figure(data=[go.Bar(
-                        x=bar_names,
-                        y=bar_vals,
-                        marker_color=["#F43F5E", "#F59E0B", "#06B6D4", "#8B5CF6"][:len(bar_names)],
-                        text=bar_vals,
+                        x=list(chart_data.keys()),
+                        y=list(chart_data.values()),
+                        marker_color=["#F43F5E", "#F59E0B", "#06B6D4", "#8B5CF6"][:len(chart_data)],
+                        text=list(chart_data.values()),
                         textposition="outside",
                         textfont=dict(color="white"),
                     )])
