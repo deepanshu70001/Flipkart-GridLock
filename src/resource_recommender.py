@@ -224,6 +224,11 @@ class ResourceRecommender:
                 "secondary": "Thanisandra Road → Nagavara",
                 "avoid": "Hebbal Flyover during rush",
             },
+            "ORR North 2": {
+                "primary": "Hennur Road → Kalyan Nagar → Ramamurthy Nagar",
+                "secondary": "Thanisandra Road → Bagalur Road",
+                "avoid": "Nagavara Junction during peak",
+            },
             "Old Madras Road": {
                 "primary": "CMH Road → Indiranagar",
                 "secondary": "ORR via KR Puram",
@@ -234,13 +239,63 @@ class ResourceRecommender:
                 "secondary": "Tumkur Road via Yeshwanthpur",
                 "avoid": "Magadi Road Flyover during construction",
             },
+            "West of Chord Road": {
+                "primary": "Magadi Road → Rajajinagar Industrial Area",
+                "secondary": "Tumkur Road → Yeshwanthpur Circle",
+                "avoid": "Mahalakshmi Layout during peak hours",
+            },
+            "ORR West 1": {
+                "primary": "Mysore Road → RR Nagar → Kengeri",
+                "secondary": "Chord Road → Vijayanagar → Attiguppe",
+                "avoid": "Nayandahalli Junction during peak",
+            },
+            "CBD 1": {
+                "primary": "Residency Road → Richmond Road → Hosur Road",
+                "secondary": "MG Road → Trinity Circle → Old Airport Road",
+                "avoid": "Corporation Circle during office hours",
+            },
+            "CBD 2": {
+                "primary": "MG Road → Brigade Road → Residency Road",
+                "secondary": "JC Road → KR Road → Mysore Road",
+                "avoid": "Town Hall area during rallies",
+            },
+            "Hennur Main Road": {
+                "primary": "ORR North → Kalyan Nagar → Banaswadi",
+                "secondary": "Thanisandra Road → Jakkur → Yelahanka",
+                "avoid": "Hennur Bande Junction during peak",
+            },
+            "IRR(Thanisandra road)": {
+                "primary": "Hennur Road → Hebbal via ORR North",
+                "secondary": "Bagalur Road → Yelahanka via NH44",
+                "avoid": "Thanisandra Junction during rush hours",
+            },
+            "Varthur Road": {
+                "primary": "Whitefield Main Road → ITPL Road → ORR East",
+                "secondary": "Sarjapur Road → Marathahalli via ORR",
+                "avoid": "Varthur Kodi Junction during peak",
+            },
+            "Old Airport Road": {
+                "primary": "ORR East → Indiranagar via CMH Road",
+                "secondary": "HAL Road → Domlur → Koramangala",
+                "avoid": "Manipal Hospital Junction during peak",
+            },
+            "Airport New South Road": {
+                "primary": "Bellary Road → Hebbal Flyover → NH44",
+                "secondary": "Hennur Road → Kalyan Nagar → ORR",
+                "avoid": "Mekhri Circle during VIP movement",
+            },
+            "Non-corridor": {
+                "primary": "Use nearest parallel arterial road",
+                "secondary": "Navigate via adjacent major corridor",
+                "avoid": "Event location and 500m radius",
+            },
         }
 
         if corridor in diversion_map:
             diversion = diversion_map[corridor]
         else:
             diversion = {
-                "primary": "Use adjacent parallel roads",
+                "primary": "Use adjacent parallel roads via nearest corridor",
                 "secondary": "Check Google Maps for real-time alternatives",
                 "avoid": "Event location and 500m radius",
             }
