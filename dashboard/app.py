@@ -20,8 +20,7 @@ import json
 import os
 import sys
 import yaml
-
-# Add project root
+import math
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from src.resource_recommender import ResourceRecommender
@@ -1013,14 +1012,27 @@ def render_prediction_interface(df):
             "closure_proba": closure_proba,
         }
 
+        # Get coordinates for the map
+        mask = (df["corridor"] == corridor)
+        if junction != "unknown":
+            mask = mask & (df["junction"] == junction)
+        
+        valid_coords = df[mask & df["latitude"].notna() & df["longitude"].notna()]
+        if not valid_coords.empty:
+            event_lat = float(valid_coords["latitude"].iloc[0])
+            event_lon = float(valid_coords["longitude"].iloc[0])
+        else:
+            event_lat = 12.9716
+            event_lon = 77.5946
+
         event_profile = {
             "event_cause": event_cause,
             "corridor": corridor,
             "is_rush_hour": is_rush,
             "is_weekend": is_weekend,
             "is_planned": event_type == "planned",
-            "latitude": 12.9716,
-            "longitude": 77.5946,
+            "latitude": event_lat,
+            "longitude": event_lon,
             "junction": junction if junction != "unknown" else "unknown",
         }
 
@@ -1070,27 +1082,34 @@ def render_prediction_interface(df):
             fig = go.Figure(go.Indicator(
                 mode="gauge+number+delta",
                 value=severity_proba * 100,
-                number={"suffix": "%", "font": {"size": 36, "color": "white"}},
-                delta={"reference": 50, "increasing": {"color": "#F43F5E"}, "decreasing": {"color": "#10B981"}},
+                domain={'x': [0.1, 0.9], 'y': [0.1, 0.9]},
+                number={"suffix": "%", "font": {"size": 32, "color": "#F1F5F9", "family": "Inter, sans-serif"}},
+                delta={"reference": 50, "increasing": {"color": "#F43F5E"}, "decreasing": {"color": "#10B981"}, "font": {"size": 16}},
                 gauge={
-                    "axis": {"range": [0, 100], "tickcolor": "#475569", "tickfont": {"color": "#64748B"}},
-                    "bar": {"color": severity_color, "thickness": 0.3},
-                    "bgcolor": "rgba(255,255,255,0.03)",
-                    "borderwidth": 0,
+                    "axis": {"range": [0, 100], "tickwidth": 1, "tickcolor": "#475569", "tickfont": {"color": "#64748B", "size": 10}},
+                    "bar": {"color": severity_color, "thickness": 0.25},
+                    "bgcolor": "rgba(255,255,255,0.02)",
+                    "borderwidth": 1,
+                    "bordercolor": "rgba(255,255,255,0.05)",
                     "steps": [
-                        {"range": [0, 40], "color": "rgba(16,185,129,0.1)"},
-                        {"range": [40, 60], "color": "rgba(245,158,11,0.1)"},
-                        {"range": [60, 100], "color": "rgba(244,63,94,0.1)"},
+                        {"range": [0, 40], "color": "rgba(16,185,129,0.15)"},
+                        {"range": [40, 60], "color": "rgba(245,158,11,0.15)"},
+                        {"range": [60, 100], "color": "rgba(244,63,94,0.15)"},
                     ],
                     "threshold": {
-                        "line": {"color": "#fff", "width": 2},
-                        "thickness": 0.75,
+                        "line": {"color": "#ffffff", "width": 3},
+                        "thickness": 0.8,
                         "value": severity_proba * 100,
                     },
                 },
-                title={"text": "Severity Score", "font": {"size": 14, "color": "#94A3B8"}},
+                title={"text": "Severity Score", "font": {"size": 16, "color": "#E2E8F0", "family": "Inter, sans-serif"}},
             ))
-            fig.update_layout(height=250, paper_bgcolor="rgba(0,0,0,0)", font=dict(color="white"))
+            fig.update_layout(
+                height=260, 
+                margin=dict(l=20, r=20, t=50, b=20),
+                paper_bgcolor="rgba(0,0,0,0)", 
+                font=dict(color="white", family="Inter")
+            )
             st.plotly_chart(fig, use_container_width=True)
 
         with col2:
@@ -1166,6 +1185,81 @@ def render_prediction_interface(df):
                     <div class="route-path">{diversion.get('avoid', 'N/A')}</div>
                 </div>
                 """, unsafe_allow_html=True)
+                
+            # Diversion Map
+            st.markdown("###### 🗺️ Route & Diversion Map")
+            
+            # Generate mock route coordinates for visualization
+            def get_arc(lat, lon, radius, points=20, start_angle=0, end_angle=math.pi):
+                lats, lons = [], []
+                for i in range(points):
+                    angle = start_angle + (i / (points - 1)) * (end_angle - start_angle)
+                    lats.append(lat + radius * math.cos(angle))
+                    lons.append(lon + radius * math.sin(angle))
+                return lats, lons
+            
+            p_lats, p_lons = get_arc(event_lat, event_lon, 0.012, start_angle=0.2, end_angle=2.9)
+            s_lats, s_lons = get_arc(event_lat, event_lon, 0.018, start_angle=-2.9, end_angle=-0.2)
+            
+            map_fig = go.Figure()
+            
+            # Avoid Zone (Event Location)
+            map_fig.add_trace(go.Scattermap(
+                lat=[event_lat], lon=[event_lon],
+                mode="markers",
+                marker=dict(size=40, color="rgba(244,63,94,0.3)"),
+                name="Avoid Zone",
+                hoverinfo="skip"
+            ))
+            map_fig.add_trace(go.Scattermap(
+                lat=[event_lat], lon=[event_lon],
+                mode="markers",
+                marker=dict(size=15, color="#F43F5E", symbol="circle"),
+                name="Event Location",
+                text=[f"Event: {event_cause}"],
+                hoverinfo="text"
+            ))
+            
+            # Primary Route
+            map_fig.add_trace(go.Scattermap(
+                lat=p_lats, lon=p_lons,
+                mode="lines",
+                line=dict(width=4, color="#10B981"),
+                name="Primary Diversion",
+                text=[diversion.get('primary', 'N/A')] * len(p_lats),
+                hoverinfo="text"
+            ))
+            
+            # Secondary Route
+            map_fig.add_trace(go.Scattermap(
+                lat=s_lats, lon=s_lons,
+                mode="lines",
+                line=dict(width=3, color="#8B5CF6"),
+                name="Secondary Diversion",
+                text=[diversion.get('secondary', 'N/A')] * len(s_lats),
+                hoverinfo="text"
+            ))
+            
+            map_fig.update_layout(
+                map_style="carto-darkmatter",
+                map=dict(
+                    center=dict(lat=event_lat, lon=event_lon),
+                    zoom=13,
+                ),
+                height=400,
+                margin=dict(l=0, r=0, t=0, b=0),
+                paper_bgcolor="rgba(0,0,0,0)",
+                legend=dict(
+                    yanchor="top", y=0.95,
+                    xanchor="left", x=0.02,
+                    bgcolor="rgba(13,17,23,0.7)",
+                    font=dict(color="white"),
+                    bordercolor="rgba(255,255,255,0.1)",
+                    borderwidth=1
+                )
+            )
+            
+            st.plotly_chart(map_fig, use_container_width=True)
         else:
             st.warning("Resource recommender not available. Check config.yaml.")
 
