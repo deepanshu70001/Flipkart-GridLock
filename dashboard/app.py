@@ -21,6 +21,7 @@ import os
 import sys
 import yaml
 import math
+import requests
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from src.resource_recommender import ResourceRecommender
@@ -551,6 +552,25 @@ def load_recommender():
         return recommender
     except Exception:
         return None
+
+
+@st.cache_data(show_spinner=False)
+def get_osrm_route(start_lon, start_lat, end_lon, end_lat):
+    """Fetch real road geometries from OSRM API."""
+    url = f"http://router.project-osrm.org/route/v1/driving/{start_lon},{start_lat};{end_lon},{end_lat}?overview=full&geometries=geojson"
+    try:
+        response = requests.get(url, timeout=3.0)
+        if response.status_code == 200:
+            data = response.json()
+            if data.get("routes"):
+                coords = data["routes"][0]["geometry"]["coordinates"]
+                lons = [c[0] for c in coords]
+                lats = [c[1] for c in coords]
+                return lats, lons
+    except Exception:
+        pass
+    # Fallback to straight line if OSRM fails
+    return [start_lat, end_lat], [start_lon, end_lon]
 
 
 # ──────────────────────────────────────────────────────────────
@@ -1189,64 +1209,90 @@ def render_prediction_interface(df):
             # Diversion Map
             st.markdown("###### 🗺️ Route & Diversion Map")
             
-            # Generate mock route coordinates for visualization
-            def get_arc(lat, lon, radius, points=20, start_angle=0, end_angle=math.pi):
+            # Dynamic scaling based on severity
+            radius_deg = 0.002 + (severity_proba * 0.015)
+            dest_radius = radius_deg * 2.0
+            
+            # Generate Avoid Zone polygon (circle)
+            def get_circle(lat, lon, radius, points=40):
                 lats, lons = [], []
-                for i in range(points):
-                    angle = start_angle + (i / (points - 1)) * (end_angle - start_angle)
+                for i in range(points + 1):
+                    angle = (i / points) * 2 * math.pi
                     lats.append(lat + radius * math.cos(angle))
-                    lons.append(lon + radius * math.sin(angle))
+                    # Adjust longitude for aspect ratio approx at Bengaluru latitude (12.9 deg -> cos ~0.97)
+                    lons.append(lon + (radius / 0.97) * math.sin(angle))
                 return lats, lons
             
-            p_lats, p_lons = get_arc(event_lat, event_lon, 0.012, start_angle=0.2, end_angle=2.9)
-            s_lats, s_lons = get_arc(event_lat, event_lon, 0.018, start_angle=-2.9, end_angle=-0.2)
+            avoid_lats, avoid_lons = get_circle(event_lat, event_lon, radius_deg)
             
             map_fig = go.Figure()
             
-            # Avoid Zone (Event Location)
+            # 1. Avoid Zone Area (Polygon fill)
             map_fig.add_trace(go.Scattermap(
-                lat=[event_lat], lon=[event_lon],
-                mode="markers",
-                marker=dict(size=40, color="rgba(244,63,94,0.3)"),
-                name="Avoid Zone",
-                hoverinfo="skip"
-            ))
-            map_fig.add_trace(go.Scattermap(
-                lat=[event_lat], lon=[event_lon],
-                mode="markers",
-                marker=dict(size=15, color="#F43F5E", symbol="circle"),
-                name="Event Location",
-                text=[f"Event: {event_cause}"],
+                lat=avoid_lats, lon=avoid_lons,
+                mode="lines",
+                fill="toself",
+                fillcolor="rgba(244,63,94,0.15)",
+                line=dict(color="rgba(244,63,94,0.8)", width=2),
+                name="Affected Zone",
+                text=[f"Danger Zone<br>Radius: {radius_deg * 111:.1f} km"] * len(avoid_lats),
                 hoverinfo="text"
             ))
             
-            # Primary Route
+            # 2. Event Center
             map_fig.add_trace(go.Scattermap(
-                lat=p_lats, lon=p_lons,
-                mode="lines",
-                line=dict(width=4, color="#10B981"),
-                name="Primary Diversion",
-                text=[diversion.get('primary', 'N/A')] * len(p_lats),
+                lat=[event_lat], lon=[event_lon],
+                mode="markers",
+                marker=dict(size=14, color="#F43F5E", symbol="circle"),
+                name="Incident Center",
+                text=[f"Incident: {event_cause}"],
                 hoverinfo="text"
             ))
             
-            # Secondary Route
-            map_fig.add_trace(go.Scattermap(
-                lat=s_lats, lon=s_lons,
-                mode="lines",
-                line=dict(width=3, color="#8B5CF6"),
-                name="Secondary Diversion",
-                text=[diversion.get('secondary', 'N/A')] * len(s_lats),
-                hoverinfo="text"
-            ))
+            # 3. Dynamic Multi-layer Routes (OSRM integration)
+            n_lat, n_lon = event_lat + dest_radius, event_lon
+            s_lat, s_lon = event_lat - dest_radius, event_lon
+            e_lat, e_lon = event_lat, event_lon + (dest_radius / 0.97)
+            w_lat, w_lon = event_lat, event_lon - (dest_radius / 0.97)
+            
+            routes_to_show = []
+            
+            # Primary always calculated
+            e_lats, e_lons = get_osrm_route(event_lon, event_lat, e_lon, e_lat)
+            routes_to_show.append(("Primary Escape (East)", e_lats, e_lons, "#10B981", 4))
+            
+            if severity_proba >= 0.3:
+                # Medium Incident
+                w_lats, w_lons = get_osrm_route(event_lon, event_lat, w_lon, w_lat)
+                routes_to_show.append(("Secondary Escape (West)", w_lats, w_lons, "#8B5CF6", 4))
+                
+            if severity_proba >= 0.6:
+                # Major Incident
+                n_lats, n_lons = get_osrm_route(event_lon, event_lat, n_lon, n_lat)
+                routes_to_show.append(("Alternative Corridor (North)", n_lats, n_lons, "#F59E0B", 3))
+                
+            if severity_proba >= 0.8:
+                # Extreme Incident
+                s_lats, s_lons = get_osrm_route(event_lon, event_lat, s_lon, s_lat)
+                routes_to_show.append(("Emergency Corridor (South)", s_lats, s_lons, "#06B6D4", 3))
+                
+            for name, r_lats, r_lons, color, width in routes_to_show:
+                map_fig.add_trace(go.Scattermap(
+                    lat=r_lats, lon=r_lons,
+                    mode="lines",
+                    line=dict(width=width, color=color),
+                    name=name,
+                    text=[name] * len(r_lats),
+                    hoverinfo="text"
+                ))
             
             map_fig.update_layout(
                 map_style="carto-darkmatter",
                 map=dict(
                     center=dict(lat=event_lat, lon=event_lon),
-                    zoom=13,
+                    zoom=13 - (severity_proba * 1.5),  # Zoom out for higher severity
                 ),
-                height=400,
+                height=450,
                 margin=dict(l=0, r=0, t=0, b=0),
                 paper_bgcolor="rgba(0,0,0,0)",
                 legend=dict(
