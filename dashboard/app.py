@@ -13,7 +13,6 @@ Run with: streamlit run dashboard/app.py
 
 import streamlit as st
 import pandas as pd
-import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
 import json
@@ -65,7 +64,7 @@ st.markdown("""
     }
 
     html, body, [class*="css"] {
-        font-family: 'Inter', -apple-system, sans-serif;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
     }
 
     .stApp {
@@ -888,7 +887,7 @@ def render_prediction_interface(df):
         
         veh_types = sorted([v for v in df["veh_type"].unique()
                             if v != "unknown" and pd.notna(v)]) if "veh_type" in df.columns else []
-        vehicle_type = st.selectbox("Vehicle Type", ["unknown"] + veh_types)
+        st.selectbox("Vehicle Type", ["unknown"] + veh_types)
 
     with col3:
         st.markdown('<p style="color:#94A3B8; font-size:0.7rem; font-weight:700; text-transform:uppercase; letter-spacing:1px; margin-bottom:0.5rem;">Specific Location</p>', unsafe_allow_html=True)
@@ -900,7 +899,7 @@ def render_prediction_interface(df):
         
         zones = ["Unknown"] + sorted([z for z in df["zone"].unique() if pd.notna(z)]) if "zone" in df.columns else ["Unknown"]
         zone_idx = zones.index(default_zone) if default_zone in zones else 0
-        zone = st.selectbox("Zone", zones, index=zone_idx, help="Auto-filled based on Corridor")
+        st.selectbox("Zone", zones, index=zone_idx, help="Auto-filled based on Corridor")
 
         # Auto-fill Junction based on corridor
         top_junctions = corridor_df["junction"].value_counts() if not corridor_df.empty and "junction" in df.columns else pd.Series(dtype=int)
@@ -961,8 +960,8 @@ def render_prediction_interface(df):
     with col3:
         st.markdown('<p style="color:#94A3B8; font-size:0.7rem; font-weight:700; text-transform:uppercase; letter-spacing:1px; margin-bottom:0.5rem;">Extra Details</p>', unsafe_allow_html=True)
         requires_closure = st.checkbox("Requires Road Closure?")
-        description = st.text_area("Event Description (optional)", height=68,
-                                   placeholder="e.g., Major water logging near underpass...")
+        st.text_area("Event Description (optional)", height=68,
+                     placeholder="e.g., Major water logging near underpass...")
 
     st.markdown("")
 

@@ -131,7 +131,7 @@ class SeverityModel:
             C=1.0, random_state=self.random_state, max_iter=1000
         )
         self.meta_model.fit(meta_train, y_train)
-        print(f"  Meta-learner trained on stacked predictions")
+        print("  Meta-learner trained on stacked predictions")
 
         # ── Step 3: Refit base models on full training data ──
         for name, model in self.base_models.items():

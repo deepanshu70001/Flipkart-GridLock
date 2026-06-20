@@ -13,7 +13,6 @@ Feature Groups:
   E. Interaction (rush × closure, planned × corridor, etc.)
 """
 
-import pandas as pd
 import numpy as np
 import yaml
 import warnings

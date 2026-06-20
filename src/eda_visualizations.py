@@ -182,7 +182,7 @@ class EDAVisualizer:
         ax = axes[0]
         top_corridors = df["corridor"].value_counts().head(15)
         colors = ["#e74c3c" if c != "Non-corridor" else "#95a5a6" for c in top_corridors.index]
-        bars = ax.barh(top_corridors.index[::-1], top_corridors.values[::-1], color=colors[::-1])
+        ax.barh(top_corridors.index[::-1], top_corridors.values[::-1], color=colors[::-1])
         ax.set_title("Top 15 Corridors by Event Count", fontweight="bold")
         ax.set_xlabel("Events")
 

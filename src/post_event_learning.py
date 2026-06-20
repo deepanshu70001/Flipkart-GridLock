@@ -102,7 +102,6 @@ class PostEventLearningSystem:
         clos_features = [f for f in feature_engine.get_closure_features() if f in df.columns]
 
         X_sev = df[sev_features]
-        X_dur_all = df[dur_features]
         X_clos = df[clos_features]
 
         # -- Severity Analysis --
@@ -128,7 +127,7 @@ class PostEventLearningSystem:
                 "bias": round(bias, 3),
                 "count": int(mask.sum()),
             }
-        print(f"\nSeverity bias by cause:")
+        print("\nSeverity bias by cause:")
         for cause, info in sorted(sev_bias.items(), key=lambda x: abs(x[1]["bias"]), reverse=True)[:5]:
             print(f"  {cause:20s}: actual={info['actual_high_rate']:.1%}, pred={info['predicted_high_rate']:.1%}, bias={info['bias']:+.3f}")
 
@@ -140,7 +139,7 @@ class PostEventLearningSystem:
             y_dur_pred = duration_model.predict_single(X_dur)
 
             dur_errors = y_dur_pred - y_dur_actual.values
-            print(f"\nDuration Prediction Error (hours):")
+            print("\nDuration Prediction Error (hours):")
             print(f"  Mean Error (bias): {dur_errors.mean():+.2f}h")
             print(f"  Median Error:      {np.median(dur_errors):+.2f}h")
             print(f"  MAE:               {np.abs(dur_errors).mean():.2f}h")
@@ -160,7 +159,7 @@ class PostEventLearningSystem:
                     "ratio": round(ratio, 3),
                     "count": int(mask.sum()),
                 }
-            print(f"\nDuration bias by cause (ratio > 1 = over-prediction):")
+            print("\nDuration bias by cause (ratio > 1 = over-prediction):")
             for cause, info in sorted(dur_bias.items(), key=lambda x: abs(x[1]["ratio"] - 1), reverse=True)[:5]:
                 direction = "OVER" if info["ratio"] > 1 else "UNDER"
                 print(f"  {cause:20s}: actual={info['actual_mean_hours']:.1f}h, pred={info['predicted_mean_hours']:.1f}h, {direction} by {abs(info['ratio']-1):.0%}")
@@ -191,7 +190,7 @@ class PostEventLearningSystem:
 
         report_path = os.path.join(
             self.config["outputs"]["reports_dir"],
-            f"post_event_report.json",
+            "post_event_report.json",
         )
         os.makedirs(os.path.dirname(report_path), exist_ok=True)
         with open(report_path, "w") as f:

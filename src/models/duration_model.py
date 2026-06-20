@@ -81,7 +81,7 @@ class DurationModel:
         mean_params["objective"] = "regression"
         self.mean_model = lgb.LGBMRegressor(**mean_params)
         self.mean_model.fit(X_train_valid, y_log)
-        print(f"  Mean regression model trained")
+        print("  Mean regression model trained")
 
         # Feature importances
         self.feature_importances = pd.Series(

@@ -19,11 +19,9 @@ import sys
 import os
 import json
 import yaml
-import numpy as np
 import pandas as pd
 import warnings
 import argparse
-from pathlib import Path
 
 # Set stdout to utf-8 to handle special characters printed by models
 sys.stdout.reconfigure(encoding='utf-8')
@@ -196,8 +194,7 @@ class CongestionPipeline:
         print("\n" + "#" * 60)
         print("#  STEP 8: POST-EVENT LEARNING")
         print("#" * 60)
-        available_features_all = [f for f in self.feature_engine.get_feature_names() if f in df_test.columns]
-        report = self.learning_system.analyze_from_dataset(
+        self.learning_system.analyze_from_dataset(
             df_test, self.severity_model, self.duration_model, self.closure_model,
             self.feature_engine
         )
@@ -226,15 +223,15 @@ class CongestionPipeline:
             "total_features": len(severity_features),
         }
 
-        print(f"\n  Severity Model:")
+        print("\n  Severity Model:")
         for k, v in metrics.get("severity", {}).items():
             print(f"    {k:20s}: {v:.4f}")
 
-        print(f"\n  Duration Model:")
+        print("\n  Duration Model:")
         for k, v in metrics.get("duration", {}).items():
             print(f"    {k:20s}: {v:.4f}" if isinstance(v, float) else f"    {k:20s}: {v}")
 
-        print(f"\n  Closure Model:")
+        print("\n  Closure Model:")
         for k, v in metrics.get("closure", {}).items():
             print(f"    {k:20s}: {v:.4f}" if isinstance(v, float) else f"    {k:20s}: {v}")
 
@@ -377,7 +374,7 @@ def main():
         print("Running prediction demo...")
         # TODO: Load saved models and run inference
     else:
-        metrics = pipeline.run_training()
+        pipeline.run_training()
         print("\n[OK] Pipeline completed successfully!")
 
 
