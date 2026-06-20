@@ -78,6 +78,7 @@ The prototype includes an interactive Streamlit dashboard (`dashboard/app.py`) t
 - **Live Event Simulation**: Allows operators to input new events and instantly receive predicted severity, duration ranges, and complete resource deployment plans.
 - **Hotspot Visualization**: Interactive maps displaying historical event clusters.
 - **Model Explainability**: SHAP value plots explaining *why* the models made specific predictions.
+- **Automated PDF Reporting**: Instantly generates an ultra-premium, dashboard-styled PDF report detailing the AI's impact predictions, complete resource action plan, suggested diversion routes, and itemized cost breakdown with visualizations.
 - **Post-Event Analytics**: Dashboards tracking the accuracy of the models over time.
 
 ---
@@ -114,6 +115,7 @@ streamlit run dashboard/app.py
 │   ├── eda_visualizations.py           # Exploratory data analysis scripts
 │   ├── resource_recommender.py         # Manpower/barricading/diversion plans
 │   ├── post_event_learning.py          # Feedback loop & correction factors
+│   ├── pdf_generator.py                # Premium PDF report generation (ReportLab)
 │   ├── pipeline.py                     # End-to-end orchestrator
 │   ├── tune_duration_model.py          # RandomizedSearch hyperparameter tuning
 │   └── models/
@@ -138,3 +140,4 @@ streamlit run dashboard/app.py
 2. **Quantile Duration Estimation**: We don't just predict a single number for duration; we predict uncertainty bands (P10–P90) which is critical for risk-averse resource planning.
 3. **Post-Event Learning Loop**: Auto-generates correction factors from prediction errors.
 4. **Actionable Resource Recommendations**: Converts abstract ML probabilities into concrete deployment plans (personnel, barricades, cost estimates).
+5. **Automated Command Reports**: On-the-fly generation of premium, visually-rich PDF Action Plan reports for immediate dispatch.

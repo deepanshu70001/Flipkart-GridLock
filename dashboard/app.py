@@ -24,6 +24,7 @@ import requests
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from src.resource_recommender import ResourceRecommender
+from src.pdf_generator import generate_action_plan_pdf
 
 # ──────────────────────────────────────────────────────────────
 # PAGE CONFIG
@@ -1067,6 +1068,15 @@ def render_prediction_interface(df):
 
         # ── Phase 1: Prediction Results ──
         st.markdown("##### 🎯 Prediction Results")
+
+        pdf_buffer = generate_action_plan_pdf(event_profile, predictions, plan)
+        st.download_button(
+            label="📄 Download Detailed PDF Report",
+            data=pdf_buffer,
+            file_name=f"event_action_plan_{pd.Timestamp.now().strftime('%Y%m%d_%H%M%S')}.pdf",
+            mime="application/pdf",
+            type="primary"
+        )
 
         col1, col2, col3, col4 = st.columns(4)
 
