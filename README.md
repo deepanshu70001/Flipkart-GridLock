@@ -76,9 +76,11 @@ A novel addition to the prototype is the automated learning loop.
 
 The prototype includes an interactive Streamlit dashboard (`dashboard/app.py`) that acts as the control center for operators.
 - **Live Event Simulation**: Allows operators to input new events and instantly receive predicted severity, duration ranges, and complete resource deployment plans.
+- **War Room (Live Simulation)**: A real-time event simulation timeline that auto-generates an incident scenario, runs AI analysis, dispatches resources on a live map second-by-second, and shows a Cost Savings comparison against naive deployment — all animated in real-time.
 - **Hotspot Visualization**: Interactive maps displaying historical event clusters.
 - **Model Explainability**: SHAP value plots explaining *why* the models made specific predictions.
 - **Automated PDF Reporting**: Instantly generates an ultra-premium, dashboard-styled PDF report detailing the AI's impact predictions, complete resource action plan, suggested diversion routes, and itemized cost breakdown with visualizations.
+- **Cost Savings Calculator**: Every simulation and prediction calculates the financial savings of AI-optimized deployment vs. a naive "send maximum resources" approach.
 - **Post-Event Analytics**: Dashboards tracking the accuracy of the models over time.
 
 ---
